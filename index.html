@@ -558,6 +558,17 @@
                 </div>
             </div>
 
+            <!-- 8. Race Distribution (Full - ECharts) -->
+            <div class="panel col-12">
+                <div class="panel-inner">
+                    <div class="panel-header">
+                        <div class="panel-icon"></div>
+                        <div class="panel-title">全服种族分布 / Race Distribution</div>
+                    </div>
+                    <div class="chart-container" id="raceChart" style="min-height: 600px;"></div>
+                </div>
+            </div>
+
         </div>
 
         <footer>
@@ -569,6 +580,8 @@
         </footer>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="race_data.js"></script>
     <script>
         // Generate Particles
         const particleContainer = document.getElementById('particles');
@@ -608,6 +621,108 @@
                 closeModal();
             }
         }
+
+        // ECharts Logic for Race Distribution
+        document.addEventListener('DOMContentLoaded', function() {
+            // Use global variable raceData from race_data.js
+            if (typeof raceData === 'undefined') {
+                console.error('raceData is not defined. Make sure race_data.js is loaded.');
+                return;
+            }
+            
+            const data = raceData;
+            const chartDom = document.getElementById('raceChart');
+            const myChart = echarts.init(chartDom);
+            
+            const raceColors = {
+                '人族': { male: '#d4af37', female: '#f2dfa8' }, // Gold / Light Gold
+                '精灵族': { male: '#4a90e2', female: '#8bc1ff' }, // Blue / Light Blue
+                '拉拉菲尔族': { male: '#e85d75', female: '#ff9eb0' }, // Red / Pink
+                '猫魅族': { male: '#50e3c2', female: '#9fffe8' }, // Teal / Light Teal
+                '鲁加族': { male: '#f5a623', female: '#ffcd75' }, // Orange / Light Orange
+                '敖龙族': { male: '#bd10e0', female: '#e68aff' }, // Purple / Light Purple
+                '硌狮族': { male: '#7ed321', female: '#b5ff6e' }, // Green / Light Green
+                '维埃拉族': { male: '#9013fe', female: '#c675ff' }  // Violet / Light Violet
+            };
+
+            const series = [];
+            data.races.forEach(race => {
+                // Male Series
+                series.push({
+                    name: race, // Same name for legend grouping
+                    type: 'bar',
+                    stack: 'total',
+                    emphasis: { focus: 'series' },
+                    data: data.detailed_data[race]['男'].map(val => ({ value: val, gender: '男' })),
+                    itemStyle: { color: raceColors[race].male }
+                });
+                // Female Series
+                series.push({
+                    name: race, // Same name for legend grouping
+                    type: 'bar',
+                    stack: 'total',
+                    emphasis: { focus: 'series' },
+                    data: data.detailed_data[race]['女'].map(val => ({ value: val, gender: '女' })),
+                    itemStyle: { color: raceColors[race].female }
+                });
+            });
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    backgroundColor: 'rgba(0,0,0,0.9)',
+                    borderColor: '#d4af37',
+                    textStyle: { color: '#fff' },
+                    formatter: function(params) {
+                        let res = `<div style="font-weight:bold; margin-bottom:5px; border-bottom:1px solid #555; padding-bottom:5px;">${params[0].axisValue}</div>`;
+                        params.forEach(param => {
+                            if (param.value > 0) {
+                                const gender = param.data.gender;
+                                const genderIcon = gender === '男' ? '♂' : '♀';
+                                res += `<div style="display:flex; justify-content:space-between; width:180px;">
+                                    <span style="color:${param.color}">● ${param.seriesName} ${genderIcon}</span>
+                                    <span style="font-weight:bold">${param.value}</span>
+                                </div>`;
+                            }
+                        });
+                        return res;
+                    }
+                },
+                legend: {
+                    data: data.races,
+                    bottom: 0,
+                    textStyle: { color: '#e2e2e2' },
+                    selectedMode: 'single', // Key feature: Click to isolate
+                    inactiveColor: '#444'
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '10%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'value',
+                    splitLine: { show: false },
+                    axisLabel: { color: '#aaa' }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: data.servers,
+                    axisLabel: { color: '#e2e2e2' }
+                },
+                series: series
+            };
+
+            myChart.setOption(option);
+            
+            // Resize handler
+            window.addEventListener('resize', function() {
+                myChart.resize();
+            });
+        });
     </script>
 </body>
 </html>
